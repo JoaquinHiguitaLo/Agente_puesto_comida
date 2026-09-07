@@ -1,0 +1,82 @@
+[
+    {
+        "id_producto": 1,
+        "Producto": "Flor jamaica",
+        "Cantidad stock": "5",
+        "Unidad": "lb",
+        "Costo unitario": "500",
+        "Costo total stock": "500",
+        "Stock minimo": "5",
+        "Stock maximo": "10"
+    },
+    {
+        "id_producto": 2,
+        "Producto": "Totillas maiz",
+        "Cantidad stock": "22",
+        "Unidad": "unidades",
+        "Costo unitario": "909",
+        "Costo total stock": "20000",
+        "Stock minimo": "10",
+        "Stock maximo": "20"
+    },
+    {
+        "id_producto": 3,
+        "Producto": "Totillas harina pequeñas",
+        "Cantidad stock": "12",
+        "Unidad": "unidades",
+        "Costo unitario": "440",
+        "Costo total stock": "5300",
+        "Stock minimo": "6",
+        "Stock maximo": "24"
+    },
+    {
+        "id_producto": 4,
+        "Producto": "Totillas harina grandes",
+        "Cantidad stock": "8",
+        "Unidad": "unidades",
+        "Costo unitario": "1000",
+        "Costo total stock": "8000",
+        "Stock minimo": "5",
+        "Stock maximo": "16"
+    },
+    {
+        "id_producto": 5,
+        "Producto": "Ramen",
+        "Cantidad stock": "6",
+        "Unidad": "unidades",
+        "Costo unitario": "3000",
+        "Costo total stock": "18000",
+        "Stock minimo": "3",
+        "Stock maximo": "12"
+    },
+    {
+        "id_producto": 6,
+        "Producto": "Doritos",
+        "Cantidad stock": "10",
+        "Unidad": "unidades",
+        "Costo unitario": "2500",
+        "Costo total stock": "25000",
+        "Stock minimo": "5",
+        "Stock maximo": "20"
+    },
+    {
+        "id_producto": 7,
+        "Producto": "Chile ancho",
+        "Cantidad stock": "8",
+        "Unidad": "unidades",
+        "Costo unitario": "2500",
+        "Costo total stock": "20000",
+        "Stock minimo": "4",
+        "Stock maximo": "16"
+    },
+    {
+        "id_producto": 8,
+        "Producto": "Chile guajillo",
+        "Cantidad stock": "10",
+        "Unidad": "unidades",
+        "Costo unitario": "3500",
+        "Costo total stock": "35000",
+        "Stock minimo": "5",
+        "Stock maximo": "20"
+    }
+]

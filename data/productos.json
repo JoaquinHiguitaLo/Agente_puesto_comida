@@ -1,0 +1,98 @@
+[
+  {
+    "id_producto": 1,
+    "producto": "Flor jamaica",
+    "categoria": "especias",
+    "unidad": "lb",
+    "stock_actual": 5,
+    "stock_minimo": 5,
+    "stock_maximo": 10,
+    "costo_unitario": 100,
+    "costo_total_stock": 500,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 2,
+    "producto": "Totillas maiz",
+    "categoria": "abarrotes",
+    "unidad": "unidades",
+    "stock_actual": 22,
+    "stock_minimo": 10,
+    "stock_maximo": 20,
+    "costo_unitario": 909,
+    "costo_total_stock": 20000,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 3,
+    "producto": "Totillas harina pequeñas",
+    "categoria": "abarrotes",
+    "unidad": "unidades",
+    "stock_actual": 12,
+    "stock_minimo": 6,
+    "stock_maximo": 24,
+    "costo_unitario": 440,
+    "costo_total_stock": 5300,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 4,
+    "producto": "Totillas harina grandes",
+    "categoria": "abarrotes",
+    "unidad": "unidades",
+    "stock_actual": 8,
+    "stock_minimo": 5,
+    "stock_maximo": 16,
+    "costo_unitario": 1000,
+    "costo_total_stock": 8000,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 5,
+    "producto": "Ramen",
+    "categoria": "snacks",
+    "unidad": "unidades",
+    "stock_actual": 6,
+    "stock_minimo": 3,
+    "stock_maximo": 12,
+    "costo_unitario": 3000,
+    "costo_total_stock": 18000,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 6,
+    "producto": "Doritos",
+    "categoria": "snacks",
+    "unidad": "unidades",
+    "stock_actual": 10,
+    "stock_minimo": 5,
+    "stock_maximo": 20,
+    "costo_unitario": 2500,
+    "costo_total_stock": 25000,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 7,
+    "producto": "Chile ancho",
+    "categoria": "especias",
+    "unidad": "unidades",
+    "stock_actual": 8,
+    "stock_minimo": 4,
+    "stock_maximo": 16,
+    "costo_unitario": 2500,
+    "costo_total_stock": 20000,
+    "id_proveedor_preferido": null
+  },
+  {
+    "id_producto": 8,
+    "producto": "Chile guajillo",
+    "categoria": "especias",
+    "unidad": "unidades",
+    "stock_actual": 10,
+    "stock_minimo": 5,
+    "stock_maximo": 20,
+    "costo_unitario": 3500,
+    "costo_total_stock": 35000,
+    "id_proveedor_preferido": null
+  }
+]

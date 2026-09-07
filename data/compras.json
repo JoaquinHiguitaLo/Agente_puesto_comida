@@ -1,0 +1,110 @@
+[
+  {
+    "id_compra": 1,
+    "fecha": "2026-07-05",
+    "id_producto": 1,
+    "id_proveedor": 1,
+    "cantidad": 5,
+    "costo_unitario": 18000,
+    "costo_total": 90000
+  },
+  {
+    "id_compra": 2,
+    "fecha": "2026-08-20",
+    "id_producto": 1,
+    "id_proveedor": 2,
+    "cantidad": 5,
+    "costo_unitario": 19500,
+    "costo_total": 97500
+  },
+  {
+    "id_compra": 3,
+    "fecha": "2026-07-10",
+    "id_producto": 2,
+    "id_proveedor": 3,
+    "cantidad": 22,
+    "costo_unitario": 900,
+    "costo_total": 19800
+  },
+  {
+    "id_compra": 4,
+    "fecha": "2026-08-01",
+    "id_producto": 3,
+    "id_proveedor": 3,
+    "cantidad": 12,
+    "costo_unitario": 440,
+    "costo_total": 5280
+  },
+  {
+    "id_compra": 5,
+    "fecha": "2026-08-01",
+    "id_producto": 4,
+    "id_proveedor": 3,
+    "cantidad": 8,
+    "costo_unitario": 1000,
+    "costo_total": 8000
+  },
+  {
+    "id_compra": 6,
+    "fecha": "2026-07-15",
+    "id_producto": 5,
+    "id_proveedor": 4,
+    "cantidad": 6,
+    "costo_unitario": 2900,
+    "costo_total": 17400
+  },
+  {
+    "id_compra": 7,
+    "fecha": "2026-08-25",
+    "id_producto": 5,
+    "id_proveedor": 5,
+    "cantidad": 6,
+    "costo_unitario": 3000,
+    "costo_total": 18000
+  },
+  {
+    "id_compra": 8,
+    "fecha": "2026-07-18",
+    "id_producto": 6,
+    "id_proveedor": 4,
+    "cantidad": 10,
+    "costo_unitario": 2500,
+    "costo_total": 25000
+  },
+  {
+    "id_compra": 9,
+    "fecha": "2026-08-10",
+    "id_producto": 7,
+    "id_proveedor": 6,
+    "cantidad": 8,
+    "costo_unitario": 2500,
+    "costo_total": 20000
+  },
+  {
+    "id_compra": 10,
+    "fecha": "2026-08-12",
+    "id_producto": 8,
+    "id_proveedor": 6,
+    "cantidad": 10,
+    "costo_unitario": 3500,
+    "costo_total": 35000
+  },
+  {
+    "id_compra": 11,
+    "fecha": "2026-09-01",
+    "id_producto": 2,
+    "id_proveedor": 7,
+    "cantidad": 15,
+    "costo_unitario": 950,
+    "costo_total": 14250
+  },
+  {
+    "id_compra": 12,
+    "fecha": "2026-09-03",
+    "id_producto": 8,
+    "id_proveedor": 7,
+    "cantidad": 10,
+    "costo_unitario": 3450,
+    "costo_total": 34500
+  }
+]

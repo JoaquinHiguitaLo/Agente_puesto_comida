@@ -1,0 +1,42 @@
+[
+    {
+        "id_proveedor": 1,
+        "nombre": "Distribuidora la 33",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 2,
+        "nombre": "Distribuidora Uber",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 3,
+        "nombre": "Distribuidora QAP",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 4,
+        "nombre": "Frutos y semillas",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 5,
+        "nombre": "Distribuidora el pollote",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 6,
+        "nombre": "Legumbreria Wilson",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 7,
+        "nombre": "Mexicanitos",
+        "contacto": "300-123-4567"
+    },
+    {
+        "id_proveedor": 8,
+        "nombre": "Distribuidora empaques",
+        "contacto": "300-123-4567"
+    }
+]
