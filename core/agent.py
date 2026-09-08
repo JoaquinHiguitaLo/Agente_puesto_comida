@@ -8,6 +8,7 @@ from core.state import (
     obtener_memoria,
     obtener_contexto_negocio,
 )
+from tools.ventas_tool import consultar_ventas
 
 
 # Cliente para comunicarse con Gemini
@@ -63,6 +64,7 @@ def responder(mensaje_usuario: str) -> str:
         contents=mensaje_usuario,
         config=types.GenerateContentConfig(
             system_instruction=contexto,
+            tools=[consultar_ventas],
         ),
     )
 

@@ -12,6 +12,7 @@ from core.state import (
     agregar_mensaje,
     obtener_memoria,
     reiniciar_estado,
+    actualizar_contexto_negocio,
 )
 
 
@@ -43,7 +44,7 @@ st.caption(
 )
 
 
-# Panel lateral con la información académica conocida del estudiante.
+# Panel lateral con la información básica del negocio.
 with st.sidebar:
     st.header("Información del negocio")
     st.write(
@@ -55,6 +56,8 @@ with st.sidebar:
         "Nombre del puesto de comida",
         value=st.session_state.contexto_negocio.get("nombre_puesto", ""),
     )
+
+    actualizar_contexto_negocio(nombre_puesto)
 
     # Botón para reiniciar la conversación
     if st.button("🔄 Nueva conversación"):
