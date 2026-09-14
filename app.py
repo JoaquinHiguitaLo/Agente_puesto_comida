@@ -11,8 +11,9 @@ from core.state import (
     inicializar_estado,
     agregar_mensaje,
     obtener_memoria,
-    reiniciar_estado,
-    actualizar_contexto_negocio,
+    obtener_estado_agente,
+    actualizar_estado,
+    reiniciar_estado
 )
 
 
@@ -46,20 +47,29 @@ st.caption(
 
 # Panel lateral con la información básica del negocio.
 with st.sidebar:
-    st.header("Información del negocio")
-    st.write(
-        "Aquí puedes registrar la información básica de tu negocio."
-    )
+    st.header("🧠 Estado del agente")
 
-    # Entrada para el nombre del puesto de comida
-    nombre_puesto = st.text_input(
-        "Nombre del puesto de comida",
-        value=st.session_state.contexto_negocio.get("nombre_puesto", ""),
-    )
+    estado = obtener_estado_agente()
 
-    actualizar_contexto_negocio(nombre_puesto)
+    # Información obtenida durante la conversación.
+    nombre_puesto = estado.get("nombre_puesto")
+    ultima_consulta = estado.get("ultima_consulta")
+    ultima_herramienta = estado.get("ultima_herramienta")
 
-    # Botón para reiniciar la conversación
+    st.subheader("🏪 Negocio")
+    st.write(nombre_puesto or "Aún no identificado")
+
+    st.subheader("💬 Mensajes")
+    st.write(len(st.session_state.mensajes))
+
+    st.subheader("🔧 Última herramienta")
+    st.write(ultima_herramienta or "Ninguna")
+
+    st.subheader("❓ Última consulta")
+    st.write(ultima_consulta or "Ninguna")
+
+    st.divider()
+
     if st.button("🔄 Nueva conversación"):
         reiniciar_estado()
         st.rerun()
@@ -79,21 +89,29 @@ mensaje_usuario = st.chat_input(
 
 if mensaje_usuario:
 
-    # Mostrar mensaje del usuario
+    # Guardar el mensaje del usuario en la memoria.
     agregar_mensaje("user", mensaje_usuario)
+
+    # Registrar la última consulta en el estado.
+    actualizar_estado(
+        ultima_consulta=mensaje_usuario
+    )
 
     with st.chat_message("user"):
         st.markdown(mensaje_usuario)
 
-    # Generar respuesta del agente
     with st.chat_message("assistant"):
         with st.spinner("Analizando..."):
             try:
                 respuesta = responder(mensaje_usuario)
                 st.markdown(respuesta)
 
-                # Guardar respuesta en memoria
+                # Guardar la respuesta del asistente en la memoria.
                 agregar_mensaje("assistant", respuesta)
+
+                # Volver a ejecutar Streamlit para que el sidebar
+                # muestre inmediatamente el estado actualizado.
+                st.rerun()
 
             except Exception as error:
                 st.error(

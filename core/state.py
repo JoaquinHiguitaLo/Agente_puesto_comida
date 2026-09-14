@@ -1,17 +1,23 @@
-"""Gestión del estado y memoria de la sesión del agente."""
+"""Gestión de memoria y estado de la sesión del agente."""
 
 import streamlit as st
 
 
 def inicializar_estado() -> None:
-    """Inicializa el estado de la sesión si aún no existe."""
+    """Inicializa la memoria y el estado de la sesión."""
 
+    # Memoria conversacional:
+    # almacena los mensajes intercambiados entre usuario y agente.
     if "mensajes" not in st.session_state:
         st.session_state.mensajes = []
 
-    if "contexto_negocio" not in st.session_state:
-        st.session_state.contexto_negocio = {
+    # Estado estructurado:
+    # contiene información obtenida o calculada durante la conversación.
+    if "estado_agente" not in st.session_state:
+        st.session_state.estado_agente = {
             "nombre_puesto": "",
+            "ultima_consulta": "",
+            "ultima_herramienta": "",
         }
 
 
@@ -32,25 +38,38 @@ def obtener_memoria() -> list:
     return st.session_state.mensajes[-6:]
 
 
-def obtener_contexto_negocio() -> dict:
-    """Obtiene la información básica del negocio."""
+def obtener_estado_agente() -> dict:
+    """Obtiene el estado actual del agente."""
 
-    return st.session_state.contexto_negocio
+    return st.session_state.estado_agente
 
 
-def actualizar_contexto_negocio(
+def actualizar_estado(
     nombre_puesto: str | None = None,
+    ultima_consulta: str | None = None,
+    ultima_herramienta: str | None = None,
 ) -> None:
-    """Actualiza la información básica del negocio."""
+    """Actualiza los valores del estado del agente."""
 
     if nombre_puesto:
-        st.session_state.contexto_negocio["nombre_puesto"] = nombre_puesto
+        st.session_state.estado_agente["nombre_puesto"] = nombre_puesto
+
+    if ultima_consulta:
+        st.session_state.estado_agente["ultima_consulta"] = ultima_consulta
+
+    if ultima_herramienta:
+        st.session_state.estado_agente["ultima_herramienta"] = (
+            ultima_herramienta
+        )
 
 
 def reiniciar_estado() -> None:
-    """Reinicia la memoria y el contexto de la sesión."""
+    """Reinicia la memoria y el estado de la sesión."""
 
     st.session_state.mensajes = []
-    st.session_state.contexto_negocio = {
+
+    st.session_state.estado_agente = {
         "nombre_puesto": "",
+        "ultima_consulta": "",
+        "ultima_herramienta": "",
     }
