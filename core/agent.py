@@ -1,12 +1,15 @@
 """Lógica principal del agente de IA para la gestión del puesto de comida."""
+
 import json
+
 from google import genai
 from google.genai import types
 
-
 from config.settings import GEMINI_API_KEY, GEMINI_MODEL
+
 from core.state import (
     obtener_memoria,
+    obtener_contexto_negocio,
     obtener_estado_agente,
     actualizar_estado,
 )
@@ -14,16 +17,24 @@ from core.state import (
 from tools.ventas_tool import consultar_ventas
 
 
-# Cliente para comunicarse con Gemini
+# ============================================================
+# CLIENTE DE GEMINI
+# ============================================================
+
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-#Funciones de utilidad para extraer información del mensaje del usuario y construir el contexto que se envía al modelo.
 
-#wrapper es una función que envuelve otra función para agregar comportamiento adicional sin modificar directamente su implementación original.
+# ============================================================
+# TOOL: CONSULTAR VENTAS
+# ============================================================
+
 def consultar_ventas_desde_agente() -> dict:
-    """Ejecuta la Tool de ventas y registra su utilización en el estado."""
+    """
+    Ejecuta la herramienta de ventas y registra su utilización
+    en el estado del agente.
+    """
 
-    resultado = consultar_ventas()
+    resultado = consultar_ventas.invoke({})
 
     actualizar_estado(
         ultima_herramienta="consultar_ventas"
@@ -35,9 +46,16 @@ def consultar_ventas_desde_agente() -> dict:
 
     return resultado
 
-#En este flujo, JSON funciona como un formato estructurado de intercambio entre el LLM y la aplicación. El LLM produce información estructurada y Python la interpreta para actualizar el estado de la sesión.
+
+# ============================================================
+# EXTRACCIÓN DE INFORMACIÓN DEL NEGOCIO
+# ============================================================
+
 def extraer_estado_de_conversacion(mensaje_usuario: str) -> None:
-    """Extrae información relevante del mensaje y actualiza el estado."""
+    """
+    Extrae información relevante del mensaje del usuario
+    y actualiza el estado de la sesión.
+    """
 
     prompt = f"""
 Analiza el siguiente mensaje del usuario y determina si contiene
@@ -68,7 +86,11 @@ Reglas:
 
     try:
         datos = json.loads(respuesta.text)
-        print("DEBUG - Resultado extracción:", datos)
+
+        print(
+            "DEBUG - Resultado extracción:",
+            datos
+        )
 
         nombre_puesto = datos.get("nombre_puesto")
 
@@ -76,24 +98,30 @@ Reglas:
             actualizar_estado(
                 nombre_puesto=nombre_puesto
             )
+
             print(
                 "DEBUG - Estado después de actualizar:",
-                obtener_estado_agente()
-    )
+                obtener_contexto_negocio()
+            )
 
     except (json.JSONDecodeError, AttributeError):
-        # Si el modelo no devuelve un JSON válido,
-        # simplemente no modificamos el estado.
         pass
 
 
-def construir_contexto() -> str:
-    """Construye las instrucciones y el contexto que recibe el modelo."""
+# ============================================================
+# CONTEXTO DEL AGENTE
+# ============================================================
 
+def construir_contexto() -> str:
+    """
+    Construye las instrucciones y el contexto que recibe Gemini.
+    """
+
+    contexto_negocio = obtener_contexto_negocio()
     estado_agente = obtener_estado_agente()
     memoria = obtener_memoria()
 
-    nombre_puesto = estado_agente.get("nombre_puesto")
+    nombre_puesto = contexto_negocio.get("nombre_puesto")
 
     contexto = f"""
 Eres un asistente inteligente especializado en la gestión
@@ -114,44 +142,190 @@ ESTADO ACTUAL DEL AGENTE:
 {estado_agente}
 
 HERRAMIENTAS DISPONIBLES:
-- consultar_ventas: consulta las ventas registradas del negocio.
-  Utilízala cuando el usuario solicite información sobre ventas
-  registradas.
+
+1. consultar_ventas
+   Consulta todas las ventas registradas del negocio.
+
+   Debes utilizar esta herramienta cuando el usuario solicite:
+   - sus ventas
+   - ventas registradas
+   - historial de ventas
+   - productos vendidos
+   - cantidades vendidas
+   - información relacionada con las ventas
 
 REGLAS DE COMPORTAMIENTO:
+
 - No inventes información sobre ventas, inventario, costos o ganancias.
-- Si no tienes los datos necesarios, indícalo claramente.
-- Si una pregunta requiere consultar información del negocio,
-  utiliza la herramienta correspondiente cuando esté disponible.
-- Puedes analizar información y generar recomendaciones.
+- Si necesitas información registrada en el sistema, utiliza la
+  herramienta correspondiente.
+- Puedes analizar la información obtenida mediante las herramientas.
+- Puedes generar recomendaciones.
 - Las recomendaciones no representan una acción ejecutada.
 - No debes realizar compras, modificar precios, publicar promociones
-  ni ejecutar acciones que impliquen decisiones económicas importantes
-  sin autorización del usuario.
-- Explica tus respuestas de manera sencilla y directa.
+  ni ejecutar acciones económicas importantes sin autorización.
+- Si no existen datos suficientes, indícalo claramente.
+- Responde de manera sencilla y directa.
 """
 
     return contexto
 
 
-def responder(mensaje_usuario: str) -> str:
-    """Procesa el mensaje del usuario y genera una respuesta."""
+# ============================================================
+# DEFINICIÓN DE LA TOOL PARA GEMINI
+# ============================================================
 
-    # Primero analizamos el mensaje para detectar
-    # información relevante que pueda actualizar el estado.
+def obtener_tool_ventas():
+    """
+    Define formalmente la herramienta que Gemini puede solicitar.
+    """
+
+    funcion = types.FunctionDeclaration(
+        name="consultar_ventas",
+        description=(
+            "Consulta todas las ventas registradas del puesto "
+            "de comida en el sistema."
+        ),
+        parameters_json_schema={
+            "type": "object",
+            "properties": {},
+        },
+    )
+
+    return types.Tool(
+        function_declarations=[funcion]
+    )
+
+
+# ============================================================
+# RESPUESTA DEL AGENTE
+# ============================================================
+
+def responder(mensaje_usuario: str) -> str:
+    """
+    Procesa el mensaje del usuario, permite que Gemini decida
+    si necesita utilizar una herramienta y devuelve la respuesta final.
+    """
+
+    # --------------------------------------------------------
+    # 1. Extraer información del mensaje
+    # --------------------------------------------------------
+
     extraer_estado_de_conversacion(mensaje_usuario)
 
-    # Después de actualizar el estado,
-    # construimos el contexto que recibirá el LLM.
+    # --------------------------------------------------------
+    # 2. Construir contexto
+    # --------------------------------------------------------
+
     contexto = construir_contexto()
+
+    # --------------------------------------------------------
+    # 3. Definir la herramienta disponible
+    # --------------------------------------------------------
+
+    tool_ventas = obtener_tool_ventas()
+
+    # --------------------------------------------------------
+    # 4. Construir mensaje del usuario
+    # --------------------------------------------------------
+
+    mensaje_usuario_content = types.Content(
+        role="user",
+        parts=[
+            types.Part.from_text(
+                text=mensaje_usuario
+            )
+        ],
+    )
+
+    # --------------------------------------------------------
+    # 5. Primera llamada al modelo
+    # --------------------------------------------------------
 
     respuesta = client.models.generate_content(
         model=GEMINI_MODEL,
-        contents=mensaje_usuario,
+        contents=[
+            mensaje_usuario_content
+        ],
         config=types.GenerateContentConfig(
             system_instruction=contexto,
-            tools=[consultar_ventas_desde_agente],
+            tools=[tool_ventas],
         ),
     )
 
-    return respuesta.text
+    # --------------------------------------------------------
+    # 6. Comprobar si Gemini solicitó una herramienta
+    # --------------------------------------------------------
+
+    if not respuesta.function_calls:
+        return respuesta.text
+
+    # --------------------------------------------------------
+    # 7. Obtener la llamada solicitada por Gemini
+    # --------------------------------------------------------
+
+    llamada = respuesta.function_calls[0]
+
+    print(
+        "DEBUG - Gemini solicitó:",
+        llamada.name
+    )
+
+    # --------------------------------------------------------
+    # 8. Ejecutar la herramienta solicitada
+    # --------------------------------------------------------
+
+    if llamada.name == "consultar_ventas":
+
+        resultado_tool = consultar_ventas_desde_agente()
+
+    else:
+
+        return (
+            "El agente solicitó una herramienta que "
+            "no está disponible actualmente."
+        )
+
+    # --------------------------------------------------------
+    # 9. Convertir el resultado de Python en respuesta
+    #    para Gemini
+    # --------------------------------------------------------
+
+    respuesta_tool = types.Part.from_function_response(
+        name=llamada.name,
+        response={
+            "result": resultado_tool
+        },
+    )
+
+    contenido_tool = types.Content(
+        role="user",
+        parts=[
+            respuesta_tool
+        ],
+    )
+
+    # --------------------------------------------------------
+    # 10. Segunda llamada a Gemini
+    # --------------------------------------------------------
+    # Gemini recibe:
+    # - la pregunta original
+    # - su propia solicitud de herramienta
+    # - el resultado de la herramienta
+    #
+    # Con esto puede construir la respuesta final.
+
+    respuesta_final = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=[
+            mensaje_usuario_content,
+            respuesta.candidates[0].content,
+            contenido_tool,
+        ],
+        config=types.GenerateContentConfig(
+            system_instruction=contexto,
+            tools=[tool_ventas],
+        ),
+    )
+
+    return respuesta_final.text

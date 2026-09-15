@@ -11,9 +11,10 @@ from core.state import (
     inicializar_estado,
     agregar_mensaje,
     obtener_memoria,
+    obtener_contexto_negocio,
     obtener_estado_agente,
     actualizar_estado,
-    reiniciar_estado
+    reiniciar_estado,
 )
 
 
@@ -49,10 +50,10 @@ st.caption(
 with st.sidebar:
     st.header("🧠 Estado del agente")
 
+    contexto_negocio = obtener_contexto_negocio()
     estado = obtener_estado_agente()
 
-    # Información obtenida durante la conversación.
-    nombre_puesto = estado.get("nombre_puesto")
+    nombre_puesto = contexto_negocio.get("nombre_puesto")
     ultima_consulta = estado.get("ultima_consulta")
     ultima_herramienta = estado.get("ultima_herramienta")
 

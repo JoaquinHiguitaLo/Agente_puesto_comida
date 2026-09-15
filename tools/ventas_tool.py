@@ -1,16 +1,21 @@
-"""Herramienta para consultar las ventas del puesto de comida."""
+"""Tool para consultar las ventas del puesto de comida."""
 
 import json
 from pathlib import Path
 
+from langchain.tools import tool
 
+
+DATA_FILE = Path(__file__).resolve().parents[1] / "data" / "ventas.json"
+
+
+"""Le comunica a LangChain puede ser utilizada como una herramienta por un Agent"""
+@tool
 def consultar_ventas() -> dict:
     """Consulta todas las ventas registradas en ventas.json."""
 
-    ruta_archivo = Path(__file__).resolve().parent.parent / "data" / "ventas.json"
-
     try:
-        with open(ruta_archivo, "r", encoding="utf-8") as archivo:
+        with DATA_FILE.open("r", encoding="utf-8") as archivo:
             ventas = json.load(archivo)
 
         return {
