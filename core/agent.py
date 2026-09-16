@@ -1,331 +1,258 @@
-"""Lógica principal del agente de IA para la gestión del puesto de comida."""
+"""
+Núcleo del Agente de puesto de comida v2 con LangChain.
 
-import json
+Decide si una solicitud puede resolverse mediante una Chain
+determinista o mediante un Agent con múltiples Tools.
 
-from google import genai
-from google.genai import types
+La estructura sigue el patrón propuesto en la guía académica,
+adaptándolo al dominio de gestión de un puesto de comida.
+"""
+
+from langchain.agents import create_agent
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from chains.response_chain import crear_respuesta_chain
+from chains.router_chain import crear_router_chain
 
 from config.settings import GEMINI_API_KEY, GEMINI_MODEL
 
-from core.state import (
-    obtener_memoria,
-    obtener_contexto_negocio,
-    obtener_estado_agente,
-    actualizar_estado,
-)
+from prompts.negocio_prompt import AGENT_SYSTEM_TEMPLATE
 
 from tools.ventas_tool import consultar_ventas
+from tools.inventario_tool import consultar_inventario
+from tools.proveedores_tool import consultar_proveedores
+from tools.compras_tool import consultar_compras
+from tools.fecha_tool import obtener_fecha
+from tools.productos_tool import consultar_productos
 
 
 # ============================================================
-# CLIENTE DE GEMINI
+# TOOLS DISPONIBLES PARA EL AGENTE
 # ============================================================
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+TOOLS = [
+    obtener_fecha,
+    consultar_ventas,
+    consultar_inventario,
+    consultar_proveedores,
+    consultar_compras,
+    consultar_productos,
+]
 
 
 # ============================================================
-# TOOL: CONSULTAR VENTAS
+# CREACIÓN DEL MODELO
 # ============================================================
 
-def consultar_ventas_desde_agente() -> dict:
+def _crear_modelo() -> ChatGoogleGenerativeAI:
     """
-    Ejecuta la herramienta de ventas y registra su utilización
-    en el estado del agente.
-    """
+    Crea el modelo de lenguaje que utilizará el Agent.
 
-    resultado = consultar_ventas.invoke({})
-
-    actualizar_estado(
-        ultima_herramienta="consultar_ventas"
-    )
-
-    print(
-        "DEBUG - Tool ejecutada: consultar_ventas"
-    )
-
-    return resultado
-
-
-# ============================================================
-# EXTRACCIÓN DE INFORMACIÓN DEL NEGOCIO
-# ============================================================
-
-def extraer_estado_de_conversacion(mensaje_usuario: str) -> None:
-    """
-    Extrae información relevante del mensaje del usuario
-    y actualiza el estado de la sesión.
+    Se utiliza Gemini mediante la integración de LangChain.
     """
 
-    prompt = f"""
-Analiza el siguiente mensaje del usuario y determina si contiene
-información explícita sobre el nombre de su negocio.
-
-MENSAJE DEL USUARIO:
-{mensaje_usuario}
-
-Reglas:
-- Extrae el nombre únicamente si el usuario lo proporciona de forma clara.
-- No inventes información.
-- Si el usuario no proporciona el nombre del negocio, devuelve null.
-- Responde únicamente con un objeto JSON válido.
-- Utiliza exactamente esta estructura:
-
-{{
-    "nombre_puesto": "nombre encontrado o null"
-}}
-"""
-
-    respuesta = client.models.generate_content(
+    return ChatGoogleGenerativeAI(
         model=GEMINI_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
+        api_key=GEMINI_API_KEY,
+        temperature=0.1,
     )
 
-    try:
-        datos = json.loads(respuesta.text)
 
-        print(
-            "DEBUG - Resultado extracción:",
-            datos
+# ============================================================
+# CONSTRUCCIÓN DEL SYSTEM PROMPT
+# ============================================================
+
+def _construir_system_prompt(
+    nombre_negocio: str,
+    memoria: str,
+) -> str:
+    """
+    Construye las instrucciones principales que recibe el Agent.
+
+    El prompt incorpora el nombre del negocio y la memoria
+    reciente de la conversación.
+    """
+
+    return AGENT_SYSTEM_TEMPLATE.format(
+        nombre_negocio=nombre_negocio or "No registrado",
+        memoria=memoria or "Sin memoria reciente.",
+    )
+
+
+# ============================================================
+# EXTRAER RESPUESTA FINAL
+# ============================================================
+
+def _extraer_texto_final(result: dict) -> str:
+    """
+    Extrae el contenido textual del último mensaje generado
+    por el Agent.
+    """
+
+    mensajes = result.get("messages", [])
+
+    if not mensajes:
+        return "No fue posible generar una respuesta."
+
+    contenido = mensajes[-1].content
+
+    if isinstance(contenido, str):
+        return contenido
+
+    if isinstance(contenido, list):
+
+        partes = []
+
+        for bloque in contenido:
+
+            if (
+                isinstance(bloque, dict)
+                and bloque.get("type") == "text"
+            ):
+                partes.append(
+                    str(bloque.get("text", ""))
+                )
+
+            elif isinstance(bloque, str):
+                partes.append(bloque)
+
+        texto = "\n".join(
+            parte for parte in partes if parte
+        ).strip()
+
+        return texto or "No fue posible generar una respuesta."
+
+    return str(contenido)
+
+
+# ============================================================
+# DETECTAR TOOLS UTILIZADAS
+# ============================================================
+
+def _detectar_tools_usadas(result: dict) -> list[str]:
+    """
+    Obtiene los nombres de las Tools que fueron solicitadas
+    por el modelo durante la ejecución del Agent.
+    """
+
+    usadas: list[str] = []
+
+    for mensaje in result.get("messages", []):
+
+        tool_calls = getattr(
+            mensaje,
+            "tool_calls",
+            None
+        ) or []
+
+        for call in tool_calls:
+
+            nombre = call.get("name")
+
+            if nombre and nombre not in usadas:
+                usadas.append(nombre)
+
+    return usadas
+
+
+# ============================================================
+# RESPUESTA PRINCIPAL DEL AGENTE
+# ============================================================
+
+def responder(
+    mensaje_usuario: str,
+    nombre_negocio: str,
+    memoria: str,
+) -> dict:
+    """
+    Procesa la solicitud del usuario.
+
+    Primero utiliza el Router Chain para determinar si la consulta
+    puede resolverse mediante una Chain determinista o si requiere
+    un Agent con Tools.
+
+    Retorna información sobre:
+
+    - respuesta generada
+    - ruta utilizada
+    - motivo de la decisión
+    - herramientas utilizadas
+    """
+
+    # --------------------------------------------------------
+    # 1. CREAR ROUTER
+    # --------------------------------------------------------
+
+    router = crear_router_chain()
+
+    decision = router.invoke(
+        {
+            "pregunta": mensaje_usuario
+        }
+    )
+
+    # --------------------------------------------------------
+    # 2. EJECUTAR CHAIN DETERMINISTA
+    # --------------------------------------------------------
+
+    if decision.ruta == "chain":
+
+        chain = crear_respuesta_chain()
+
+        texto = chain.invoke(
+            {
+                "pregunta": mensaje_usuario
+            }
         )
 
-        nombre_puesto = datos.get("nombre_puesto")
-
-        if nombre_puesto:
-            actualizar_estado(
-                nombre_puesto=nombre_puesto
-            )
-
-            print(
-                "DEBUG - Estado después de actualizar:",
-                obtener_contexto_negocio()
-            )
-
-    except (json.JSONDecodeError, AttributeError):
-        pass
-
-
-# ============================================================
-# CONTEXTO DEL AGENTE
-# ============================================================
-
-def construir_contexto() -> str:
-    """
-    Construye las instrucciones y el contexto que recibe Gemini.
-    """
-
-    contexto_negocio = obtener_contexto_negocio()
-    estado_agente = obtener_estado_agente()
-    memoria = obtener_memoria()
-
-    nombre_puesto = contexto_negocio.get("nombre_puesto")
-
-    contexto = f"""
-Eres un asistente inteligente especializado en la gestión
-de un pequeño puesto de comida.
-
-Tu función es ayudar al propietario o administrador a analizar
-la información de su negocio y tomar mejores decisiones.
-
-Debes ser claro, preciso y práctico.
-
-CONTEXTO DEL NEGOCIO:
-- Nombre del puesto: {nombre_puesto or "No registrado"}
-
-MEMORIA RECIENTE DE LA CONVERSACIÓN:
-{memoria}
-
-ESTADO ACTUAL DEL AGENTE:
-{estado_agente}
-
-HERRAMIENTAS DISPONIBLES:
-
-1. consultar_ventas
-   Consulta todas las ventas registradas del negocio.
-
-   Debes utilizar esta herramienta cuando el usuario solicite:
-   - sus ventas
-   - ventas registradas
-   - historial de ventas
-   - productos vendidos
-   - cantidades vendidas
-   - información relacionada con las ventas
-
-REGLAS DE COMPORTAMIENTO:
-
-- No inventes información sobre ventas, inventario, costos o ganancias.
-- Si necesitas información registrada en el sistema, utiliza la
-  herramienta correspondiente.
-- Puedes analizar la información obtenida mediante las herramientas.
-- Puedes generar recomendaciones.
-- Las recomendaciones no representan una acción ejecutada.
-- No debes realizar compras, modificar precios, publicar promociones
-  ni ejecutar acciones económicas importantes sin autorización.
-- Si no existen datos suficientes, indícalo claramente.
-- Responde de manera sencilla y directa.
-"""
-
-    return contexto
-
-
-# ============================================================
-# DEFINICIÓN DE LA TOOL PARA GEMINI
-# ============================================================
-
-def obtener_tool_ventas():
-    """
-    Define formalmente la herramienta que Gemini puede solicitar.
-    """
-
-    funcion = types.FunctionDeclaration(
-        name="consultar_ventas",
-        description=(
-            "Consulta todas las ventas registradas del puesto "
-            "de comida en el sistema."
-        ),
-        parameters_json_schema={
-            "type": "object",
-            "properties": {},
-        },
-    )
-
-    return types.Tool(
-        function_declarations=[funcion]
-    )
-
-
-# ============================================================
-# RESPUESTA DEL AGENTE
-# ============================================================
-
-def responder(mensaje_usuario: str) -> str:
-    """
-    Procesa el mensaje del usuario, permite que Gemini decida
-    si necesita utilizar una herramienta y devuelve la respuesta final.
-    """
+        return {
+            "respuesta": texto,
+            "ruta": "Chain",
+            "motivo": decision.motivo,
+            "tools": [],
+        }
 
     # --------------------------------------------------------
-    # 1. Extraer información del mensaje
+    # 3. CREAR MODELO
     # --------------------------------------------------------
 
-    extraer_estado_de_conversacion(mensaje_usuario)
+    model = _crear_modelo()
 
     # --------------------------------------------------------
-    # 2. Construir contexto
+    # 4. CREAR AGENT
     # --------------------------------------------------------
 
-    contexto = construir_contexto()
-
-    # --------------------------------------------------------
-    # 3. Definir la herramienta disponible
-    # --------------------------------------------------------
-
-    tool_ventas = obtener_tool_ventas()
-
-    # --------------------------------------------------------
-    # 4. Construir mensaje del usuario
-    # --------------------------------------------------------
-
-    mensaje_usuario_content = types.Content(
-        role="user",
-        parts=[
-            types.Part.from_text(
-                text=mensaje_usuario
-            )
-        ],
-    )
-
-    # --------------------------------------------------------
-    # 5. Primera llamada al modelo
-    # --------------------------------------------------------
-
-    respuesta = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[
-            mensaje_usuario_content
-        ],
-        config=types.GenerateContentConfig(
-            system_instruction=contexto,
-            tools=[tool_ventas],
+    agent = create_agent(
+        model=model,
+        tools=TOOLS,
+        system_prompt=_construir_system_prompt(
+            nombre_negocio=nombre_negocio,
+            memoria=memoria,
         ),
     )
 
     # --------------------------------------------------------
-    # 6. Comprobar si Gemini solicitó una herramienta
+    # 5. EJECUTAR AGENT
     # --------------------------------------------------------
 
-    if not respuesta.function_calls:
-        return respuesta.text
-
-    # --------------------------------------------------------
-    # 7. Obtener la llamada solicitada por Gemini
-    # --------------------------------------------------------
-
-    llamada = respuesta.function_calls[0]
-
-    print(
-        "DEBUG - Gemini solicitó:",
-        llamada.name
+    result = agent.invoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": mensaje_usuario,
+                }
+            ]
+        }
     )
 
     # --------------------------------------------------------
-    # 8. Ejecutar la herramienta solicitada
+    # 6. RETORNAR RESULTADO
     # --------------------------------------------------------
 
-    if llamada.name == "consultar_ventas":
-
-        resultado_tool = consultar_ventas_desde_agente()
-
-    else:
-
-        return (
-            "El agente solicitó una herramienta que "
-            "no está disponible actualmente."
-        )
-
-    # --------------------------------------------------------
-    # 9. Convertir el resultado de Python en respuesta
-    #    para Gemini
-    # --------------------------------------------------------
-
-    respuesta_tool = types.Part.from_function_response(
-        name=llamada.name,
-        response={
-            "result": resultado_tool
-        },
-    )
-
-    contenido_tool = types.Content(
-        role="user",
-        parts=[
-            respuesta_tool
-        ],
-    )
-
-    # --------------------------------------------------------
-    # 10. Segunda llamada a Gemini
-    # --------------------------------------------------------
-    # Gemini recibe:
-    # - la pregunta original
-    # - su propia solicitud de herramienta
-    # - el resultado de la herramienta
-    #
-    # Con esto puede construir la respuesta final.
-
-    respuesta_final = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[
-            mensaje_usuario_content,
-            respuesta.candidates[0].content,
-            contenido_tool,
-        ],
-        config=types.GenerateContentConfig(
-            system_instruction=contexto,
-            tools=[tool_ventas],
-        ),
-    )
-
-    return respuesta_final.text
+    return {
+        "respuesta": _extraer_texto_final(result),
+        "ruta": "Agent",
+        "motivo": decision.motivo,
+        "tools": _detectar_tools_usadas(result),
+    }

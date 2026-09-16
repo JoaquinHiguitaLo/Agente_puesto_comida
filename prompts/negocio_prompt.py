@@ -1,3 +1,13 @@
+"""
+Prompts reutilizables para las Chains y el Agent
+del asistente inteligente del puesto de comida.
+"""
+
+
+# ============================================================
+# ROUTER
+# ============================================================
+
 ROUTER_SYSTEM_PROMPT = """
 Eres un enrutador para un asistente inteligente de gestión
 de un pequeño puesto de comida.
@@ -19,6 +29,11 @@ del negocio.
 Devuelve únicamente la clasificación solicitada por el esquema.
 """.strip()
 
+
+# ============================================================
+# RESPONSE CHAIN
+# ============================================================
+
 GENERAL_SYSTEM_PROMPT = """
 Eres un asistente inteligente especializado en la gestión
 de un pequeño puesto de comida.
@@ -37,6 +52,11 @@ procesada mediante las herramientas correspondientes.
 Diferencia claramente entre una explicación general y un dato
 real del negocio.
 """.strip()
+
+
+# ============================================================
+# AGENT
+# ============================================================
 
 AGENT_SYSTEM_TEMPLATE = """
 Eres un asistente inteligente especializado en la gestión
@@ -80,4 +100,3 @@ REGLAS:
 
 - Sé claro, breve y práctico.
 """.strip()
-

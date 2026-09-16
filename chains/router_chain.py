@@ -1,4 +1,4 @@
-from prompts.negocio_prompt import ROUTER_SYSTEM_PROMPT
+
 
 """Chain de clasificación para decidir entre Chain y Agent."""
 
