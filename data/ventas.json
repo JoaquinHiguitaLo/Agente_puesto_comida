@@ -70,5 +70,68 @@
         "precio_unitario": 15000,
         "valor_total": 60000,
         "cliente": "Isaac"
+    },
+    {
+        "id_venta": 9,
+        "fecha": "2026-09-02",
+        "producto": "Quesajumbo",
+        "cantidad": 2,
+        "precio_unitario": 24000,
+        "valor_total": 48000,
+        "cliente": "Pedro"
+    },
+    {
+        "id_venta": 10,
+        "fecha": "2026-09-02",
+        "producto": "Tacos birria",
+        "cantidad": 4,
+        "precio_unitario": 18000,
+        "valor_total": 54000,
+        "cliente": "Camila"
+    },
+    {
+        "id_venta": 11,
+        "fecha": "2026-09-02",
+        "producto": "Quesajumbo",
+        "cantidad": 2,
+        "precio_unitario": 22000,
+        "valor_total": 44000,
+        "cliente": "Sandra"
+    },
+    {
+        "id_venta": 12,
+        "fecha": "2026-09-02",
+        "producto": "Dorilocos",
+        "cantidad": 1,
+        "precio_unitario": 15000,
+        "valor_total": 15000,
+        "cliente": "Valentina"
+    },
+    {
+        "id_venta": 13,
+        "fecha": "2026-09-03",
+        "producto": "Tacos birria",
+        "cantidad": 2,
+        "precio_unitario": 18000,
+        "valor_total": 36000,
+        "cliente": "Camilo"
+    },
+    {
+        "id_venta": 14,
+        "fecha": "2026-09-03",
+        "producto": "Quesajumbo",
+        "cantidad": 4,
+        "precio_unitario": 22000,
+        "valor_total": 88000,
+        "cliente": "Marta"
+    },
+    {
+        "id_venta": 15,
+        "fecha": "2026-09-03",
+        "producto": "Dorilocos",
+        "cantidad": 3,
+        "precio_unitario": 15000,
+        "valor_total": 45000,
+        "cliente": "William"
     }
 ]
