@@ -1,17 +1,20 @@
-"""Interfaz principal del asistente inteligente para el puesto de comida.
 
-Este módulo coordina:
-- La interfaz de Streamlit.
-- El estado y memoria de la conversación.
-- La identificación del negocio.
-- La ejecución del Router + Chain/Agent.
-- La trazabilidad de la ejecución.
+"""Interfaz principal del asistente inteligente para Picanteo.
+
+Coordina Streamlit, el contexto del negocio y la ejecución
+del grafo de LangGraph.
 """
 
 import streamlit as st
 
+from langchain_core.messages import HumanMessage
+
 from config.settings import validar_configuracion
-from core.agent import responder
+from core.session import (
+    invocar_grafo,
+    inicializar_thread_id,
+    crear_nueva_sesion_grafo,
+)
 from core.state import (
     inicializar_estado,
     agregar_mensaje,
@@ -41,17 +44,70 @@ st.set_page_config(
 
 try:
     validar_configuracion()
-
 except ValueError as error:
     st.error(str(error))
     st.stop()
 
 
 # ============================================================
-# INICIALIZAR ESTADO
+# INICIALIZAR ESTADO Y SESIÓN DEL GRAFO
 # ============================================================
 
 inicializar_estado()
+inicializar_thread_id()
+
+
+# ============================================================
+# FUNCIONES AUXILIARES
+# ============================================================
+
+def extraer_texto(mensaje) -> str:
+    """Extrae el texto de un mensaje de LangChain."""
+
+    contenido = mensaje.content
+
+    if isinstance(contenido, str):
+        return contenido.strip()
+
+    if isinstance(contenido, list):
+        partes = []
+
+        for bloque in contenido:
+            if isinstance(bloque, str):
+                partes.append(bloque)
+
+            elif isinstance(bloque, dict):
+                if bloque.get("type") == "text":
+                    partes.append(str(bloque.get("text", "")))
+
+        return "\n".join(
+            parte for parte in partes if parte
+        ).strip()
+
+    return str(contenido)
+
+
+def extraer_respuesta_final(resultado: dict) -> str:
+    """
+    Busca la última respuesta del asistente que no sea
+    una solicitud de ejecución de herramientas.
+    """
+
+    for mensaje in reversed(resultado.get("messages", [])):
+        if getattr(mensaje, "type", "") != "ai":
+            continue
+
+        # Un mensaje que solicita herramientas todavía no
+        # representa la respuesta final para el usuario.
+        if getattr(mensaje, "tool_calls", None):
+            continue
+
+        texto = extraer_texto(mensaje)
+
+        if texto:
+            return texto
+
+    return "No fue posible generar una respuesta final."
 
 
 # ============================================================
@@ -71,118 +127,57 @@ st.caption(
 # ============================================================
 
 with st.sidebar:
-
     st.header("🧠 Estado del agente")
 
     contexto_negocio = obtener_contexto_negocio()
     estado = obtener_estado_agente()
 
-    nombre_puesto = contexto_negocio.get(
-        "nombre_puesto",
-        ""
-    )
-
-    ruta = estado.get(
-        "ruta",
-        "Sin ejecución"
-    )
-
-    motivo = estado.get(
-        "motivo",
-        ""
-    )
-
-    tools = estado.get(
-        "tools",
-        []
-    )
-
-
-    # --------------------------------------------------------
-    # NEGOCIO
-    # --------------------------------------------------------
-
     st.subheader("🏪 Negocio")
-
     st.write(
-        nombre_puesto or "Aún no identificado"
+        contexto_negocio.get("nombre_puesto")
+        or "Aún no identificado"
     )
-
-
-    # --------------------------------------------------------
-    # MENSAJES
-    # --------------------------------------------------------
 
     st.subheader("💬 Mensajes")
+    st.write(len(st.session_state.mensajes))
 
-    st.write(
-        len(st.session_state.mensajes)
-    )
-
-
-    # --------------------------------------------------------
-    # ÚLTIMA EJECUCIÓN
-    # --------------------------------------------------------
+    st.subheader("🧵 Sesión LangGraph")
+    st.code(st.session_state.thread_id)
 
     st.subheader("⚙️ Última ejecución")
-
-    st.write(ruta)
-
-
-    # --------------------------------------------------------
-    # MOTIVO DEL ROUTER
-    # --------------------------------------------------------
+    st.write(estado.get("ruta", "Sin ejecución"))
 
     st.subheader("🧭 Motivo")
-
-    st.write(
-        motivo or "Sin información"
-    )
-
-
-    # --------------------------------------------------------
-    # TOOLS UTILIZADAS
-    # --------------------------------------------------------
+    st.write(estado.get("motivo") or "Sin información")
 
     st.subheader("🔧 Tools utilizadas")
+    tools = estado.get("tools", [])
 
     if tools:
-
         for tool in tools:
             st.write(f"• {tool}")
-
     else:
-
         st.write("Ninguna")
-
 
     st.divider()
 
-
-    # --------------------------------------------------------
-    # NUEVA CONVERSACIÓN
-    # --------------------------------------------------------
-
     if st.button("🔄 Nueva conversación"):
-
+        # Reinicia el historial visual y el contexto del negocio.
         reiniciar_estado()
+
+        # Asigna un hilo distinto para no recuperar el anterior.
+        crear_nueva_sesion_grafo()
 
         st.rerun()
 
 
 # ============================================================
-# MOSTRAR HISTORIAL DE CONVERSACIÓN
+# MOSTRAR HISTORIAL VISUAL
 # ============================================================
 
 for mensaje in st.session_state.mensajes:
-
-    with st.chat_message(
-        mensaje["rol"]
-    ):
-
-        st.markdown(
-            mensaje["contenido"]
-        )
+    with st.chat_message(mensaje["rol"]):
+        st.markdown(mensaje["contenido"])
 
 
 # ============================================================
@@ -200,119 +195,66 @@ mensaje_usuario = st.chat_input(
 
 if mensaje_usuario:
 
-    # --------------------------------------------------------
-    # 1. ACTUALIZAR CONTEXTO DEL NEGOCIO
-    # --------------------------------------------------------
-
-    actualizar_contexto_negocio(
-        mensaje_usuario
-    )
-
-
-    # --------------------------------------------------------
-    # 2. GUARDAR MENSAJE DEL USUARIO
-    # --------------------------------------------------------
-
-    agregar_mensaje(
-        "user",
-        mensaje_usuario
-    )
-
-
-    # --------------------------------------------------------
-    # 3. OBTENER CONTEXTO ACTUAL
-    # --------------------------------------------------------
+    # 1. Actualizar el contexto del negocio.
+    actualizar_contexto_negocio(mensaje_usuario)
 
     contexto_negocio = obtener_contexto_negocio()
+    nombre_puesto = contexto_negocio.get("nombre_puesto", "")
 
-    nombre_puesto = contexto_negocio.get(
-        "nombre_puesto",
-        ""
-    )
-
-
-    # --------------------------------------------------------
-    # 4. OBTENER MEMORIA RECIENTE
-    # --------------------------------------------------------
-
+    # 2. Obtener la memoria previa antes de guardar la pregunta.
+    # Así no repetimos la pregunta actual dentro del prompt.
     memoria = obtener_memoria()
 
-
-    # --------------------------------------------------------
-    # 5. MOSTRAR MENSAJE DEL USUARIO
-    # --------------------------------------------------------
+    # 3. Guardar la pregunta en el historial visual.
+    agregar_mensaje("user", mensaje_usuario)
 
     with st.chat_message("user"):
-
-        st.markdown(
-            mensaje_usuario
-        )
-
-
-    # --------------------------------------------------------
-    # 6. EJECUTAR AGENTE
-    # --------------------------------------------------------
+        st.markdown(mensaje_usuario)
 
     with st.chat_message("assistant"):
-
-        with st.spinner("Analizando..."):
+        with st.spinner("Analizando con LangGraph..."):
 
             try:
+                # 4. Enviar únicamente el mensaje nuevo al grafo.
+                estado_inicial = {
+                    "messages": [
+                        HumanMessage(content=mensaje_usuario)
+                    ],
+                    "nombre_negocio": nombre_puesto,
+                    "memoria": memoria,
+                }
 
-                resultado = responder(
-                    mensaje_usuario=mensaje_usuario,
-                    nombre_negocio=nombre_puesto,
-                    memoria=memoria,
-                )
+                # 5. Ejecutar el grafo con el thread_id de la sesión.
+                resultado = invocar_grafo(estado_inicial)
 
+                # 6. Extraer la respuesta final del asistente.
+                respuesta = extraer_respuesta_final(resultado)
 
-                # ------------------------------------------------
-                # 7. EXTRAER RESPUESTA
-                # ------------------------------------------------
+                # 7. Mostrar y guardar la respuesta en la interfaz.
+                st.markdown(respuesta)
+                agregar_mensaje("assistant", respuesta)
 
-                respuesta = resultado.get(
-                    "respuesta",
-                    "No se obtuvo una respuesta."
-                )
+                # 8. Adaptar la salida del grafo al formato que
+                # espera el panel lateral existente.
+                ruta_grafo = resultado.get("ruta", "agent")
 
+                resultado_ui = {
+                    "ruta": (
+                        "Chain" if ruta_grafo == "chain"
+                        else "Agent"
+                    ),
+                    "motivo": resultado.get("motivo", ""),
+                    "tools": resultado.get(
+                        "herramientas_usadas", []
+                    ),
+                }
 
-                # ------------------------------------------------
-                # 8. MOSTRAR RESPUESTA
-                # ------------------------------------------------
+                registrar_ejecucion(resultado_ui)
 
-                st.markdown(
-                    respuesta
-                )
-
-
-                # ------------------------------------------------
-                # 9. GUARDAR RESPUESTA EN MEMORIA
-                # ------------------------------------------------
-
-                agregar_mensaje(
-                    "assistant",
-                    respuesta
-                )
-
-
-                # ------------------------------------------------
-                # 10. REGISTRAR TRAZABILIDAD
-                # ------------------------------------------------
-
-                registrar_ejecucion(
-                    resultado
-                )
-
-
-                # ------------------------------------------------
-                # 11. RECARGAR INTERFAZ
-                # ------------------------------------------------
-
+                # 9. Actualizar el panel y el historial.
                 st.rerun()
 
-
             except Exception as error:
-
                 st.error(
                     "Ocurrió un error al consultar "
                     f"el agente: {error}"
