@@ -126,19 +126,15 @@ def registrar_ejecucion(resultado: dict) -> None:
     """
 
     st.session_state.ultima_ejecucion = {
-        "ruta": resultado.get(
-            "ruta",
-            "Desconocida",
-        ),
-        "motivo": resultado.get(
-            "motivo",
-            "",
-        ),
-        "tools": resultado.get(
-            "tools",
-            [],
-        ),
-    }
+    "ruta": resultado.get("ruta", "Desconocida"),
+    "motivo": resultado.get("motivo", ""),
+    "tools": resultado.get("tools", []),
+    "duracion_segundos": resultado.get(
+        "duracion_segundos"
+    ),
+    "metricas": resultado.get("metricas"),
+    "error_general": resultado.get("error_general"),
+}
 
 
 def obtener_estado_agente() -> dict:

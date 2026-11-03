@@ -9,7 +9,7 @@ del grafo para mantener separado el estado de cada conversación.
 import uuid
 
 import streamlit as st
-
+from core.observability import ObservabilidadCallback
 from graph.workflow import crear_grafo
 
 
@@ -71,16 +71,23 @@ def obtener_configuracion_grafo() -> dict:
 # 4. EJECUTAR EL GRAFO
 # ============================================================
 
-def invocar_grafo(estado_inicial: dict) -> dict:
-    """
-    Ejecuta el grafo utilizando el identificador de la sesión.
 
-    El checkpointer recupera el estado asociado a ese hilo
-    y guarda el nuevo checkpoint al avanzar la ejecución.
+def invocar_grafo(
+    estado_inicial: dict,
+    callback: ObservabilidadCallback | None = None,
+) -> dict:
+    """
+    Ejecuta el grafo con la sesión actual.
+
+    Permite registrar métricas mediante un callback
+    sin modificar los nodos existentes.
     """
 
     grafo = obtener_grafo()
     config = obtener_configuracion_grafo()
+
+    if callback is not None:
+        config["callbacks"] = [callback]
 
     return grafo.invoke(
         estado_inicial,

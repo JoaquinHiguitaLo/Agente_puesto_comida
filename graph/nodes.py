@@ -6,13 +6,14 @@ Cada nodo recibe el estado compartido y devuelve únicamente
 las actualizaciones que deben aplicarse al grafo.
 """
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
 from chains.response_chain import crear_respuesta_chain
 from chains.router_chain import crear_router_chain
 from config.settings import GEMINI_API_KEY, GEMINI_MODEL
+from core.retrieval import recuperar_documentos
 from graph.state import BusinessState
 from prompts.negocio_prompt import AGENT_SYSTEM_TEMPLATE
 from tools import TOOLS_NEGOCIO
@@ -67,6 +68,45 @@ def _obtener_pregunta(state: BusinessState) -> str:
     return ""
 
 
+def _seleccionar_contexto(
+    state: BusinessState,
+    max_interacciones: int = 2,
+) -> list:
+    """
+    Selecciona las últimas interacciones completas.
+
+    Una interacción empieza con HumanMessage y conserva
+    todos los mensajes posteriores hasta la siguiente
+    pregunta del usuario.
+
+    No modifica el historial original del checkpointer.
+    """
+
+    mensajes = state.get("messages", [])
+
+    grupos = []
+    grupo_actual = []
+
+    for mensaje in mensajes:
+        if getattr(mensaje, "type", "") == "human":
+            if grupo_actual:
+                grupos.append(grupo_actual)
+            grupo_actual = [mensaje]
+        elif grupo_actual:
+            grupo_actual.append(mensaje)
+
+    if grupo_actual:
+        grupos.append(grupo_actual)
+
+    seleccionados = grupos[-max_interacciones:]
+
+    return [
+        mensaje
+        for grupo in seleccionados
+        for mensaje in grupo
+    ]
+
+
 def _agregar_paso(
     state: BusinessState,
     nombre_nodo: str,
@@ -103,10 +143,13 @@ def enrutador_node(state: BusinessState) -> dict:
         {"pregunta": _obtener_pregunta(state)}
     )
 
+
     return {
         "ruta": decision.ruta,
         "motivo": decision.motivo,
-        "pasos_ejecutados": _agregar_paso(state, "enrutador"),
+        "herramientas_usadas": [],
+        "pasos_ejecutados": ["enrutador"],
+        "documentos_recuperados": [],
     }
 
 
@@ -152,10 +195,16 @@ def agente_negocio_node(state: BusinessState) -> dict:
     modelo = _crear_modelo()
     modelo_con_tools = modelo.bind_tools(TOOLS_NEGOCIO)
 
+
+
     mensajes = [
-        SystemMessage(content=_construir_system_prompt(state)),
+        SystemMessage(
+            content=_construir_system_prompt(state)
+        ),
         *state.get("messages", []),
     ]
+
+
 
     respuesta = modelo_con_tools.invoke(mensajes)
 
@@ -197,4 +246,82 @@ def herramientas_node(state: BusinessState) -> dict:
         "pasos_ejecutados": _agregar_paso(
             state, "herramientas"
         ),
+    }
+
+
+def rag_node(state: BusinessState) -> dict:
+    """Recupera información documental y responde con Gemini."""
+
+    pregunta = _obtener_pregunta(state)
+
+
+    # Recuperar contexto reciente de la conversación.
+    historial = state.get("messages", [])
+
+    preguntas_recientes = [
+        mensaje.content
+        for mensaje in historial
+        if getattr(mensaje, "type", "") == "human"
+        and isinstance(mensaje.content, str)
+    ]
+
+    # Combinar las últimas dos preguntas para resolver
+    # referencias como "esa recomendación".
+    consulta_recuperacion = " ".join(
+        preguntas_recientes[-2:]
+    )
+
+    documentos = recuperar_documentos(
+        consulta_recuperacion,
+        limite=2,
+    )
+
+
+    if not documentos:
+        respuesta = (
+            "No encontré información suficiente en la "
+            "guía operativa de Picanteo para responder "
+            "esta consulta."
+        )
+
+    else:
+        contexto = "\n\n".join(
+            f"Fuente: {doc['fuente']}\n"
+            f"Sección: {doc['titulo']}\n"
+            f"Contenido:\n{doc['contenido']}"
+            for doc in documentos
+        )
+
+        modelo = ChatGoogleGenerativeAI(
+            model=GEMINI_MODEL,
+            api_key=GEMINI_API_KEY,
+        )
+
+        mensajes = [
+            SystemMessage(
+                content=(
+                    "Eres el asistente documental de Picanteo. "
+                    "Responde únicamente con información "
+                    "sustentada en el contexto recuperado. "
+                    "No inventes procedimientos ni datos reales. "
+                    "Si la información es insuficiente, indícalo. "
+                    "Menciona el documento y la sección utilizada. "
+                    "Responde en español.\n\n"
+                    f"CONTEXTO DOCUMENTAL:\n{contexto}"
+                )
+            ),
+            *state.get("messages", [])[-1:],
+        ]
+
+        respuesta_modelo = modelo.invoke(mensajes)
+
+        respuesta = respuesta_modelo.content
+
+    return {
+        "messages": [AIMessage(content=respuesta)],
+        "documentos_recuperados": documentos,
+        "pasos_ejecutados": [
+            *state.get("pasos_ejecutados", []),
+            "rag",
+        ],
     }

@@ -19,13 +19,18 @@ from prompts.negocio_prompt import ROUTER_SYSTEM_PROMPT
 class RutaConsulta(BaseModel):
     """Ruta seleccionada para atender la solicitud."""
 
-    ruta: Literal["chain", "agent"] = Field(
+
+    ruta: Literal["chain", "agent", "rag"] = Field(
         description=(
             "Usa 'chain' para consultas generales que no requieren "
-            "herramientas y 'agent' cuando se necesitan datos del "
-            "negocio o herramientas."
+            "datos reales ni documentos específicos. "
+            "Usa 'agent' para consultas que necesitan herramientas "
+            "de ventas, inventario, compras, productos o proveedores. "
+            "Usa 'rag' para preguntas que deben responderse utilizando "
+            "la guía operativa documental de Picanteo."
         )
     )
+
 
     motivo: str = Field(
         description="Justificación breve de la selección de la ruta."

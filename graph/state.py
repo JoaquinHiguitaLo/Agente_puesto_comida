@@ -39,3 +39,5 @@ class BusinessState(TypedDict, total=False):
     # Contexto del negocio y memoria textual disponible para el agente.
     nombre_negocio: str
     memoria: str
+
+    documentos_recuperados: list[dict]

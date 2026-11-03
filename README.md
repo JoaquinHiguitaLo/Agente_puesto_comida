@@ -1,304 +1,342 @@
-**Introducción**
+# PICANTEO — Asistente Inteligente para la Gestión de un Puesto de Comida
 
-El presente proyecto desarrolla un asistente inteligente basado en modelos de lenguaje (LLM) para apoyar la gestión de un pequeño puesto de comida.
+**Asignatura:** Sistemas Agénticos y Orquestadores de IA
+**Actividad:** P4 — Orquestación, despliegue y observabilidad
+**Tecnologías:** Python, Streamlit, LangChain, LangGraph y Google Gemini
 
-El sistema busca facilitar la consulta y análisis de información relacionada con las ventas, productos, inventario, compras, proveedores y fechas del negocio.
-Para ello, se implementa una arquitectura agéntica que combina un Router Chain, un Response Chain, un Agent, herramientas especializadas (Tools) y un mecanismo 
-de estado y memoria conversacional.
+## 1. Introducción
 
-El asistente puede determinar qué tipo de procesamiento requiere cada solicitud. Las consultas generales pueden resolverse mediante una cadena de respuesta 
-directa, mientras que las solicitudes que necesitan información real del negocio son dirigidas hacia un agente capaz de utilizar las herramientas disponibles.
+Picanteo es un asistente inteligente desarrollado para apoyar la administración de un pequeño puesto de comida mediante consultas en lenguaje natural.
 
-De esta manera, el proyecto aplica el concepto de orquestación basada en cadenas, permitiendo que diferentes componentes colaboren para producir una respuesta 
-según las características de cada consulta.
+El sistema permite consultar información sobre ventas, inventario, productos, compras y proveedores, además de ofrecer orientación sobre la gestión del negocio.
 
-**Planteamiento del problema**
+La arquitectura combina cadenas de lenguaje, un agente con herramientas especializadas, recuperación documental RAG, memoria conversacional y mecanismos de observabilidad.
 
-La administración de un pequeño puesto de comida puede involucrar diferentes tipos de información, como:
+El asistente está orientado a la consulta, el análisis y las recomendaciones. No ejecuta compras, pagos ni modificaciones económicas de forma autónoma.
 
-Ventas realizadas.
-Productos disponibles.
-Cantidades existentes en inventario.
-Compras realizadas.
-Proveedores.
-Precios.
-Costos.
-Información histórica del negocio.
+## 2. Planteamiento del problema
 
-Cuando esta información se administra manualmente o se encuentra distribuida en diferentes registros, resulta más difícil realizar consultas rápidas, 
-identificar situaciones relevantes y obtener una visión general del comportamiento del negocio.
+La administración de un pequeño negocio de comida requiere consultar información que suele encontrarse distribuida en diferentes registros.
 
-**Usuario objetivo**
+Esta situación dificulta analizar las ventas, identificar productos con existencias bajas, consultar proveedores y organizar las compras.
 
-El usuario principal del sistema es:
+Picanteo busca centralizar estas consultas mediante un asistente capaz de seleccionar las fuentes de información adecuadas y proporcionar respuestas fundamentadas.
 
-Propietario o administrador de un pequeño puesto de comida.
+## 3. Objetivos
 
-El sistema está pensado para una persona que necesita consultar y analizar información de su negocio sin tener que realizar manualmente cada búsqueda sobre 
-las diferentes fuentes de datos.
+### Objetivo general
 
-El usuario conserva el control sobre las decisiones importantes del negocio. El agente funciona principalmente como un sistema de consulta, análisis y 
-recomendación.
+Desarrollar y validar un asistente inteligente para la gestión de un pequeño puesto de comida mediante una arquitectura de orquestación que integre LangChain, LangGraph, herramientas, memoria, recuperación documental y observabilidad.
 
-**Objetivo general**
+### Objetivos específicos
 
-Desarrollar un asistente inteligente basado en LLM capaz de consultar y analizar información de un pequeño puesto de comida mediante una arquitectura de 
-orquestación que combine cadenas, agentes, herramientas, memoria y contexto.
+- Consultar información estructurada del negocio.
+- Diferenciar consultas generales, documentales y de datos reales.
+- Ejecutar una o varias herramientas según la necesidad.
+- Mantener contexto conversacional mediante LangGraph.
+- Recuperar información de una guía operativa utilizando RAG.
+- Registrar duración, tokens, invocaciones y errores.
+- Validar el funcionamiento mediante pruebas técnicas y funcionales.
+- Desplegar la aplicación para su demostración.
 
-**Objetivos específicos**
+## 4. Arquitectura del sistema
 
-- Consultar información de las ventas registradas.
-- Consultar el inventario disponible.
-- Consultar los productos registrados.
-- Consultar las compras realizadas.
-- Consultar los proveedores registrados.
-- Obtener información relacionada con la fecha actual.
-- Analizar información proveniente de una o varias herramientas.
-- Diferenciar entre consultas generales y consultas que requieren datos reales del negocio.
-- Mantener memoria conversacional reciente.
-- Mostrar información sobre la ruta utilizada y las herramientas ejecutadas.
-- Evitar generar información que no esté disponible en las fuentes consultadas.
+El proyecto utiliza LangGraph para administrar un grafo de estado con tres rutas principales.
 
-**Información utilizada por el agente**
-
-El agente trabaja con diferentes fuentes de información estructuradas en archivos JSON.
-
-Fuente	Información
-
-- ventas.json	Ventas realizadas, productos, cantidades, precios y valores totales
-- inventario.json	Existencias y niveles de inventario
-- productos.json	Productos registrados en el negocio
-- compras.json	Compras realizadas
-- proveedores.json	Proveedores registrados
-- Fecha	Información temporal obtenida mediante una herramienta
-
-Estas fuentes son consultadas mediante herramientas especializadas.
-
-**Herramientas del agente**
-
-El sistema implementa diferentes Tools, donde cada herramienta tiene una responsabilidad específica.
-
-  **consultar_ventas**
-
-    Permite consultar las ventas almacenadas en ventas.json.
-
-    Se utiliza cuando el usuario realiza preguntas relacionadas con:
-
-    - Ventas.
-    - Productos más vendidos.
-    - Cantidades vendidas.
-    - Ingresos registrados.
-    
-  **consultar_inventario**
-
-    Consulta el estado actual del inventario.
-    
-    Permite responder preguntas relacionadas con:
-
-    - Existencias.
-    - Productos con bajo inventario.
-    - Productos disponibles.
-    - Niveles de stock.
-
-  **consultar_productos**
-
-    Consulta el catálogo de productos registrados.
-
-  **consultar_compras**
-
-    Consulta las compras almacenadas en el sistema.
-
-  **consultar_proveedores**
-
-    Consulta los proveedores registrados.
-    
-    Si no existen proveedores registrados, la herramienta devuelve esta situación al agente para que pueda comunicarla al usuario.
-
-  **obtener_fecha**
-
-    Permite obtener información relacionada con la fecha actual.
-    
-**Arquitectura del sistema**
-
-La arquitectura implementada es híbrida, basada principalmente en una organización por capas e incorporando elementos orientados a eventos para 
-situaciones que puedan requerir alertas
-
+```text
                     USUARIO
-                       │
-                       ▼
-                 INTERFAZ CHAT
-                       │
-                       ▼
-                 AGENTE DE IA
-                       │
-             ┌─────────┴─────────┐
-             │                   │
-             ▼                   ▼
-       ROUTER CHAIN        ESTADO / MEMORIA
-             │
-       ┌─────┴─────┐
-       │           │
-       ▼           ▼
-     CHAIN       AGENT
-       │           │
-       │      ┌────┴────┐
-       │      │         │
-       │      ▼         ▼
-       │    LLM       TOOLS
-       │                │
-       │       ┌────────┼────────┐
-       │       ▼        ▼        ▼
-       │    Ventas / Inventario / Productos
-       │
-       │   Compras / Proveedores / Fecha
-       │                │
-       └────────────────┘
-                       │
-                       ▼
-                   RESPUESTA
-                       │
-                       ▼
-                USUARIO / UI
+                       |
+                       v
+                STREAMLIT CHAT
+                       |
+                       v
+                 ROUTER CHAIN
+                       |
+           +-----------+-----------+
+           |           |           |
+           v           v           v
+         CHAIN        AGENT        RAG
+           |           |           |
+           v           v           v
+        Gemini       Gemini     Recuperador
+                       |           |
+                       v           v
+                     Tools       Documento
+                       |           |
+                       v           v
+                    Datos JSON   Gemini
+           |           |           |
+           +-----------+-----------+
+                       |
+                       v
+               RESPUESTA FINAL
+                       |
+                       v
+                OBSERVABILIDAD
+```
 
-**Componentes principales**
+### Chain
 
-**Interfaz**
-Aplicación desarrollada con Streamlit que permite al usuario interactuar mediante un chat.
+Procesa preguntas generales y conceptuales que no necesitan consultar datos reales ni documentos específicos.
 
-**Router Chain**
-Clasifica la consulta y determina si debe procesarse mediante Chain o Agent.
+Ejemplo: ¿Qué es el margen de ganancia?
 
-**Response Chain**
-Resuelve consultas generales que no necesitan consultar herramientas.
+### Agent
 
-**Agent**
-Procesa solicitudes que requieren información del negocio y puede utilizar una o varias herramientas.
+Procesa solicitudes que requieren datos del negocio y ejecuta las herramientas autorizadas.
 
-**LLM**
-Modelo de lenguaje Gemini utilizado para interpretar las solicitudes, razonar sobre los resultados de las herramientas y generar respuestas.
+Ejemplo: ¿Cuántas ventas tenemos registradas?
 
-**Tools**
-Funciones especializadas que permiten acceder a las fuentes de información del negocio.
+Puede utilizar varias herramientas durante una misma consulta.
 
-**Estado y memoria**
-Conservan información del negocio identificada durante la conversación y los mensajes recientes.
+### RAG
 
-**Flujo de funcionamiento**
+Recupera fragmentos de `knowledge/guia_operativa.md` y utiliza Gemini para generar respuestas fundamentadas en la información documental.
 
-El funcionamiento del agente sigue el siguiente proceso:
+Ejemplo: Según la guía operativa de Picanteo, ¿cómo prevenir desperdicios?
 
-      1. Usuario realiza una consulta
-                    ↓
-      2. Se actualiza el estado y memoria
-                    ↓
-      3. Router Chain analiza la consulta
-                    ↓
-             ┌──────┴──────┐
-             ↓             ↓
-         Consulta       Consulta
-          general       de datos
-             ↓             ↓
-           Chain         Agent
-             │             │
-             │        Selecciona Tools
-             │             │
-             │        Consulta datos
-             │             │
-             │        Analiza resultados
-             │             │
-             └──────┬──────┘
-                    ↓
-             Generación respuesta
-                    ↓
-             Registro ejecución
-                    ↓
-                  Usuario
+El recuperador utiliza coincidencias léxicas y puntuaciones de relevancia, dando mayor importancia a los títulos de las secciones. No utiliza embeddings ni una base de datos vectorial.
 
-**Orquestación mediante Router Chain**
+## 5. Componentes tecnológicos
 
-El Router Chain constituye el primer componente de decisión del sistema.
+| Tecnología | Función |
+|---|---|
+| Python | Lenguaje principal |
+| Streamlit | Interfaz conversacional |
+| LangChain | Prompts, cadenas, modelo y herramientas |
+| LangGraph | Orquestación y flujo de estados |
+| Google Gemini | Modelo de lenguaje |
+| Pydantic | Clasificación estructurada de consultas |
+| MemorySaver | Checkpoints conversacionales en memoria |
+| JSON | Almacenamiento de datos del negocio |
+| Markdown | Base documental de RAG |
 
-Su función no es responder la pregunta, sino determinar qué ruta debe seguir la solicitud.
+## 6. Herramientas disponibles
 
-Para esto se utiliza una salida estructurada mediante Pydantic:
+El agente dispone de seis herramientas:
 
-    class RutaConsulta(BaseModel):
-        ruta: Literal["chain", "agent"]
-        motivo: str
+| Herramienta | Responsabilidad |
+|---|---|
+| `consultar_ventas` | Consultar transacciones y calcular totales registrados |
+| `consultar_inventario` | Consultar existencias y niveles de stock |
+| `consultar_productos` | Consultar el catálogo de productos |
+| `consultar_compras` | Consultar registros de compras |
+| `consultar_proveedores` | Consultar información de proveedores |
+| `obtener_fecha` | Obtener información de la fecha actual |
 
-    El router puede producir:
-    
-    ruta: chain
-    motivo: La consulta es conceptual y no requiere
-            información específica del negocio.
-    
-    o:
-    
-    ruta: agent
-    motivo: La consulta requiere consultar información
-            almacenada en las fuentes del negocio.
-            
-    Esto permite separar la responsabilidad de clasificación de la responsabilidad de ejecución.
+Los datos estructurados se almacenan en `data/`.
 
-**Response Chain**
+Los cálculos numéricos de ventas se realizan mediante Python para reducir errores de interpretación del modelo.
 
-Cuando el Router determina que la consulta es general, se utiliza el Response Chain.
+## 7. Recuperación documental RAG
 
-Su estructura sigue el patrón de LangChain:
+La base de conocimiento se encuentra en:
 
-      Prompt
-         ↓
-      Modelo Gemini
-         ↓
-      StrOutputParser
-         ↓
-      Respuesta
+`knowledge/guia_operativa.md`
 
-**Agent y Multi-Tools**
+Contiene seis secciones:
 
-Cuando la consulta requiere datos reales del negocio, el Router selecciona la ruta Agent.
+1. Control de inventario.
+2. Registro y análisis de ventas.
+3. Gestión de compras.
+4. Gestión de proveedores.
+5. Prevención de desperdicios.
+6. Límites de la información documental.
 
-El agente recibe las herramientas disponibles:
+El módulo `core/retrieval.py` carga el documento, lo divide en secciones y recupera fragmentos mediante coincidencias de palabras normalizadas y puntuaciones de relevancia.
 
-    TOOLS = [
-        obtener_fecha,
-        consultar_ventas,
-        consultar_inventario,
-        consultar_proveedores,
-        consultar_compras,
-        consultar_productos,
-    ]
+El nodo `rag_node` utiliza los fragmentos recuperados como contexto para Gemini y registra los documentos utilizados.
 
-    El Agent puede determinar qué herramienta necesita utilizar y, cuando la consulta lo requiere, puede utilizar más de una herramienta.
+La guía contiene recomendaciones generales elaboradas para el proyecto académico. No representa procedimientos internos oficiales confirmados del negocio.
 
-**Estado y memoria**
+Las cantidades y valores reales se consultan mediante las herramientas JSON.
 
-El sistema mantiene un estado utilizando st.session_state.
+## 8. Estado y memoria conversacional
 
-Se manejan principalmente:
+El proyecto utiliza dos mecanismos complementarios:
 
-      contexto_negocio
-      mensajes
-      ultima_ejecucion
+**Streamlit Session State:** conserva los mensajes visibles, el contexto del negocio y la información de la última ejecución.
 
-**Contexto del negocio**
+**LangGraph MemorySaver:** conserva checkpoints asociados a un `thread_id` para mantener la continuidad conversacional.
 
-Permite almacenar información identificada durante la conversación, como el nombre del puesto.
+Al iniciar una nueva conversación se genera un identificador diferente.
 
-**Memoria**
+La persistencia de MemorySaver es temporal, dependiente del proceso de ejecución. No constituye almacenamiento permanente después de reiniciar el servidor.
 
-El sistema conserva los últimos mensajes de la conversación para proporcionar contexto al agente.
+## 9. Observabilidad y métricas
 
-Actualmente se utiliza una memoria deslizante de hasta 6 mensajes.
+Se implementó un módulo `core/observability.py` para medir el comportamiento del agente.
 
-**Última ejecución**
+Las métricas incluyen:
 
-El sistema registra:
+- Duración de las ejecuciones.
+- Ruta seleccionada.
+- Herramientas utilizadas.
+- Llamadas completadas al modelo.
+- Tokens de entrada y salida reportados por Gemini.
+- Errores notificados por el modelo.
+- Registro de errores generales de ejecución.
 
-Ruta utilizada.
-Motivo de la decisión del Router.
-Herramientas utilizadas.
+Las métricas se muestran en el panel lateral de Streamlit.
 
-Esta información se muestra en la barra lateral de Streamlit.
+El sistema utiliza callbacks de LangChain y `perf_counter()` para recopilar información durante cada consulta.
 
+Cuando no existen metadatos de tokens, se indica que no están disponibles, en lugar de inventar valores.
 
+## 10. Pruebas y validación P4
+
+Se realizaron pruebas manuales, pruebas directas de herramientas, comprobaciones de sintaxis y simulaciones controladas.
+
+| Prueba | Resultado observado |
+|---|---|
+| Clasificación Chain | Funcionamiento verificado |
+| Clasificación Agent | Funcionamiento verificado |
+| Consulta de ventas | 50 ventas y $2.315.000 COP |
+| Consulta de inventario | 18 productos; Flor jamaica en stock mínimo |
+| Herramientas por ejecución | Se corrigió la acumulación entre consultas |
+| Duración de Chain y Agent | Medición y visualización verificadas |
+| Callback de LangChain | Registra llamadas y tokens reportados |
+| Registro de errores | Prueba simulada satisfactoria |
+| Carga documental | Seis secciones identificadas |
+| Recuperación léxica | Cuatro casos de prueba satisfactorios |
+| Ruta RAG | Consulta documental ejecutada correctamente |
+| Continuidad contextual de RAG | Caso de seguimiento sobre la sección 5 satisfactorio |
+| Sintaxis Python | Validaciones completadas sin errores |
+| Dependencias | `pip check` sin requisitos incompatibles |
+
+Estas verificaciones corresponden a las pruebas locales realizadas durante P4. No representan una cobertura automatizada exhaustiva ni sustituyen la validación final del despliegue.
+
+## 11. Hallazgos y acciones correctivas
+
+### Inconsistencias en el total de ventas
+
+**Hallazgo:** Gemini produjo diferentes importes para las mismas transacciones.
+
+**Corrección:** Se agregó `total_vendido` a `consultar_ventas`, calculado mediante Python a partir de `valor_total`.
+
+**Verificación:** Se comprobó el importe de $2.315.000 COP tanto directamente como mediante el agente.
+
+### Acumulación de herramientas
+
+**Hallazgo:** El panel mostraba herramientas utilizadas en consultas anteriores.
+
+**Corrección:** Se reinició `herramientas_usadas` al comenzar una nueva ejecución.
+
+**Verificación:** Consultas sucesivas de ventas, inventario y conceptos mostraron sus herramientas correspondientes.
+
+### Actualización de observabilidad
+
+**Hallazgo:** El panel lateral conservaba datos de ejecuciones anteriores.
+
+**Corrección:** Se implementó un contenedor actualizable mediante `st.empty()`.
+
+**Verificación:** La ruta, el motivo, las herramientas y la duración se actualizaron correctamente en pruebas posteriores.
+
+### Interpretación de inventario
+
+**Hallazgo:** Algunas expresiones sobre productos próximos a agotarse producían resultados vacíos.
+
+**Corrección:** Se agregó normalización de texto y reconocimiento de diferentes expresiones de stock bajo.
+
+**Verificación:** Cinco expresiones de consulta recuperaron correctamente el producto en stock mínimo.
+
+### Recuperación contextual RAG
+
+**Hallazgo:** Una pregunta de seguimiento identificó una sección documental incorrecta.
+
+**Corrección:** Se incorporaron preguntas recientes al contexto de recuperación.
+
+**Verificación:** Una prueba posterior identificó correctamente la sección 5, Prevención de desperdicios.
+
+### Optimización del contexto
+
+Se evaluó limitar el historial enviado al modelo, pero las pruebas mostraron respuestas de inventario incorrectas y un aumento de llamadas y tokens.
+
+Se decidió restaurar la construcción original del contexto y priorizar la estabilidad funcional.
+
+## 12. Instalación y ejecución local
+
+### Requisitos
+
+- Python compatible con las dependencias del proyecto.
+- Acceso a internet.
+- Clave API válida de Google Gemini.
+
+### Clonar el repositorio
+
+```bash
+git clone https://github.com/JoaquinHiguitaLo/Agente_puesto_comida.git
+cd Agente_puesto_comida
+```
+
+### Crear el entorno virtual en Windows
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+En Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### Instalar dependencias
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### Configuración
+
+Crear un archivo `.env` en la raíz del proyecto:
+
+```dotenv
+GEMINI_API_KEY=TU_CLAVE_API
+```
+
+La selección de modelo se administra mediante `config/settings.py` y puede configurarse usando `GEMINI_MODEL`.
+
+No se deben publicar claves ni archivos `.env` en GitHub.
+
+### Ejecutar
+
+```bash
+python -m streamlit run app.py
+```
+
+Abrir la dirección local indicada por Streamlit, normalmente:
+
+`http://localhost:8501`
+
+## 13. Despliegue
+
+El proyecto dispone de configuración para Render mediante `render.yaml`.
+
+El despliegue requiere configurar las variables de entorno necesarias en el servicio, instalar las dependencias y ejecutar Streamlit.
+
+La aplicación debe verificarse después de cada despliegue, especialmente en las rutas Chain, Agent y RAG.
+
+**URL de despliegue utilizada anteriormente:**
+https://agente-puesto-comida.onrender.com
+
+**Estado:** Pendiente de revalidación final con la versión P4.
+
+## 14. Limitaciones
+
+- Los datos del negocio provienen de archivos JSON y no de una base de datos transaccional en tiempo real.
+- MemorySaver mantiene memoria durante la vida del proceso; no garantiza persistencia permanente.
+- El recuperador RAG es léxico, por lo que puede tener limitaciones con sinónimos y preguntas ambiguas.
+- La optimización de contexto fue descartada después de detectar regresiones funcionales.
+- La calidad de las respuestas depende de las fuentes disponibles y de la interpretación del modelo.
+- El asistente no ejecuta acciones económicas ni modifica registros mediante las herramientas actuales.
+
+## 15. Conclusión
+
+Picanteo integra LangChain, LangGraph, Gemini, herramientas de negocio, memoria conversacional, recuperación documental y observabilidad.
+
+Durante P4 se implementaron mejoras técnicas, se identificaron y corrigieron problemas funcionales y se realizaron pruebas para comprobar las principales capacidades del agente.
+
+El resultado es un asistente orientado a facilitar consultas, análisis y recomendaciones para la administración de pequeños negocios de comida, con mecanismos de trazabilidad que permiten observar su comportamiento y evaluar sus resultados.

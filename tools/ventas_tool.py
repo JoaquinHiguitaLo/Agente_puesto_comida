@@ -18,10 +18,18 @@ def consultar_ventas() -> dict:
         with DATA_FILE.open("r", encoding="utf-8") as archivo:
             ventas = json.load(archivo)
 
+
+        total_vendido = sum(
+            venta["valor_total"]
+            for venta in ventas
+        )
+
         return {
             "ventas": ventas,
             "cantidad": len(ventas),
+            "total_vendido": total_vendido,
         }
+
 
     except FileNotFoundError:
         return {

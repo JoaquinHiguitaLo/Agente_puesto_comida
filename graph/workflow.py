@@ -18,6 +18,7 @@ from graph.nodes import (
     conceptual_node,
     enrutador_node,
     herramientas_node,
+    rag_node,
 )
 from graph.state import BusinessState
 
@@ -27,10 +28,15 @@ from graph.state import BusinessState
 # ============================================================
 
 def decidir_ruta(state: BusinessState) -> str:
-    """Selecciona la ruta según la decisión del enrutador."""
+    """Selecciona la ruta del grafo."""
 
-    if state.get("ruta") == "chain":
+    ruta = state.get("ruta")
+
+    if ruta == "chain":
         return "conceptual"
+
+    if ruta == "rag":
+        return "rag"
 
     return "agente"
 
@@ -60,6 +66,8 @@ def crear_grafo():
     constructor.add_node("conceptual", conceptual_node)
     constructor.add_node("agente", agente_negocio_node)
     constructor.add_node("herramientas", herramientas_node)
+    constructor.add_node("rag", rag_node)
+    constructor.add_edge("rag", END)
 
     # Inicio -> enrutador.
     constructor.add_edge(START, "enrutador")
@@ -71,6 +79,7 @@ def crear_grafo():
         {
             "conceptual": "conceptual",
             "agente": "agente",
+            "rag": "rag",
         },
     )
 
