@@ -38,5 +38,55 @@
         "id_proveedor": 8,
         "nombre": "Distribuidora empaques",
         "contacto": "300-123-4567"
-    }
+    },
+     {
+    "id_proveedor": 9,
+    "nombre": "Lácteos La Vaquita",
+    "contacto": "301-456-7890"
+  },
+  {
+    "id_proveedor": 10,
+    "nombre": "Carnes Selectas Medellín",
+    "contacto": "302-567-8901"
+  },
+  {
+    "id_proveedor": 11,
+    "nombre": "Verduras El Campesino",
+    "contacto": "303-678-9012"
+  },
+  {
+    "id_proveedor": 12,
+    "nombre": "Abarrotes La Economía",
+    "contacto": "304-789-0123"
+  },
+  {
+    "id_proveedor": 13,
+    "nombre": "Importadora Sabor Azteca",
+    "contacto": "305-890-1234"
+  },
+  {
+    "id_proveedor": 14,
+    "nombre": "Especias y Condimentos Maya",
+    "contacto": "310-234-5678"
+  },
+  {
+    "id_proveedor": 15,
+    "nombre": "Frutas Frescas del Valle",
+    "contacto": "311-345-6789"
+  },
+  {
+    "id_proveedor": 16,
+    "nombre": "Empaques y Desechables del Norte",
+    "contacto": "312-456-7890"
+  },
+  {
+    "id_proveedor": 17,
+    "nombre": "Distribuciones El Buen Sabor",
+    "contacto": "313-567-8901"
+  },
+  {
+    "id_proveedor": 18,
+    "nombre": "Salsas y Aderezos Picanticos",
+    "contacto": "314-678-9012"
+  }
 ]

@@ -106,5 +106,95 @@
     "cantidad": 10,
     "costo_unitario": 3450,
     "costo_total": 34500
+  },
+  {
+    "id_compra": 13,
+    "fecha": "2026-09-05",
+    "id_producto": 1,
+    "id_proveedor": 1,
+    "cantidad": 4,
+    "costo_unitario": 18500,
+    "costo_total": 74000
+  },
+  {
+    "id_compra": 14,
+    "fecha": "2026-09-08",
+    "id_producto": 2,
+    "id_proveedor": 3,
+    "cantidad": 30,
+    "costo_unitario": 920,
+    "costo_total": 27600
+  },
+  {
+    "id_compra": 15,
+    "fecha": "2026-09-10",
+    "id_producto": 3,
+    "id_proveedor": 4,
+    "cantidad": 15,
+    "costo_unitario": 450,
+    "costo_total": 6750
+  },
+  {
+    "id_compra": 16,
+    "fecha": "2026-09-12",
+    "id_producto": 4,
+    "id_proveedor": 3,
+    "cantidad": 10,
+    "costo_unitario": 1050,
+    "costo_total": 10500
+  },
+  {
+    "id_compra": 17,
+    "fecha": "2026-09-15",
+    "id_producto": 5,
+    "id_proveedor": 5,
+    "cantidad": 8,
+    "costo_unitario": 3100,
+    "costo_total": 24800
+  },
+  {
+    "id_compra": 18,
+    "fecha": "2026-09-18",
+    "id_producto": 6,
+    "id_proveedor": 4,
+    "cantidad": 12,
+    "costo_unitario": 2600,
+    "costo_total": 31200
+  },
+  {
+    "id_compra": 19,
+    "fecha": "2026-09-20",
+    "id_producto": 7,
+    "id_proveedor": 6,
+    "cantidad": 10,
+    "costo_unitario": 2550,
+    "costo_total": 25500
+  },
+  {
+    "id_compra": 20,
+    "fecha": "2026-09-23",
+    "id_producto": 8,
+    "id_proveedor": 7,
+    "cantidad": 12,
+    "costo_unitario": 3500,
+    "costo_total": 42000
+  },
+  {
+    "id_compra": 21,
+    "fecha": "2026-09-26",
+    "id_producto": 1,
+    "id_proveedor": 2,
+    "cantidad": 6,
+    "costo_unitario": 20000,
+    "costo_total": 120000
+  },
+  {
+    "id_compra": 22,
+    "fecha": "2026-09-29",
+    "id_producto": 2,
+    "id_proveedor": 7,
+    "cantidad": 25,
+    "costo_unitario": 980,
+    "costo_total": 24500
   }
 ]
