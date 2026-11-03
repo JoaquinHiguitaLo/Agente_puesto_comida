@@ -78,5 +78,105 @@
         "Costo total stock": "35000",
         "Stock minimo": "5",
         "Stock maximo": "20"
-    }
+    },
+    {
+    "id_producto": 9,
+    "Producto": "Queso mozzarella",
+    "Cantidad stock": "8",
+    "Unidad": "lb",
+    "Costo unitario": "12000",
+    "Costo total stock": "96000",
+    "Stock minimo": "3",
+    "Stock maximo": "15"
+  },
+  {
+    "id_producto": 10,
+    "Producto": "Carne de res",
+    "Cantidad stock": "10",
+    "Unidad": "lb",
+    "Costo unitario": "18000",
+    "Costo total stock": "180000",
+    "Stock minimo": "4",
+    "Stock maximo": "20"
+  },
+  {
+    "id_producto": 11,
+    "Producto": "Cebolla blanca",
+    "Cantidad stock": "12",
+    "Unidad": "lb",
+    "Costo unitario": "2500",
+    "Costo total stock": "30000",
+    "Stock minimo": "4",
+    "Stock maximo": "20"
+  },
+  {
+    "id_producto": 12,
+    "Producto": "Cilantro",
+    "Cantidad stock": "6",
+    "Unidad": "manojos",
+    "Costo unitario": "1500",
+    "Costo total stock": "9000",
+    "Stock minimo": "2",
+    "Stock maximo": "10"
+  },
+  {
+    "id_producto": 13,
+    "Producto": "Limón",
+    "Cantidad stock": "30",
+    "Unidad": "unidades",
+    "Costo unitario": "400",
+    "Costo total stock": "12000",
+    "Stock minimo": "10",
+    "Stock maximo": "50"
+  },
+  {
+    "id_producto": 14,
+    "Producto": "Aguacate",
+    "Cantidad stock": "10",
+    "Unidad": "unidades",
+    "Costo unitario": "2000",
+    "Costo total stock": "20000",
+    "Stock minimo": "4",
+    "Stock maximo": "20"
+  },
+  {
+    "id_producto": 15,
+    "Producto": "Crema de leche",
+    "Cantidad stock": "8",
+    "Unidad": "unidades",
+    "Costo unitario": "3500",
+    "Costo total stock": "28000",
+    "Stock minimo": "3",
+    "Stock maximo": "15"
+  },
+  {
+    "id_producto": 16,
+    "Producto": "Salsa picante",
+    "Cantidad stock": "12",
+    "Unidad": "unidades",
+    "Costo unitario": "4500",
+    "Costo total stock": "54000",
+    "Stock minimo": "4",
+    "Stock maximo": "20"
+  },
+  {
+    "id_producto": 17,
+    "Producto": "Ajo",
+    "Cantidad stock": "5",
+    "Unidad": "lb",
+    "Costo unitario": "6000",
+    "Costo total stock": "30000",
+    "Stock minimo": "2",
+    "Stock maximo": "10"
+  },
+  {
+    "id_producto": 18,
+    "Producto": "Vasos desechables",
+    "Cantidad stock": "100",
+    "Unidad": "unidades",
+    "Costo unitario": "250",
+    "Costo total stock": "25000",
+    "Stock minimo": "30",
+    "Stock maximo": "200"
+  }
 ]
