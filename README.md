@@ -254,6 +254,86 @@ Se evaluó limitar el historial enviado al modelo, pero las pruebas mostraron re
 
 Se decidió restaurar la construcción original del contexto y priorizar la estabilidad funcional.
 
+### Pérdida de contexto en preguntas de seguimiento RAG
+
+**Componente:** LangGraph — Nodo RAG  
+**Entorno:** Render (producción)  
+**Tipo:** Error de continuidad conversacional  
+**Estado:** Detectado; corrección propuesta, pendiente de validación en producción.
+
+#### 1. Descripción del hallazgo
+
+Durante las pruebas funcionales de la versión P4 de Picanteo se identificó una inconsistencia en el manejo de preguntas de seguimiento dentro de la ruta RAG.
+
+El asistente respondió correctamente una consulta basada en la guía operativa, pero no logró relacionar una segunda pregunta con la información presentada anteriormente.
+
+#### 2. Procedimiento de reproducción
+
+**Primera consulta:**
+
+«Según la guía operativa de Picanteo, ¿cómo podemos prevenir desperdicios?»
+
+**Resultado obtenido:** El asistente recuperó correctamente las recomendaciones documentadas y señaló la sección 5, *Prevención de desperdicios*, de `guia_operativa.md`.
+
+**Segunda consulta:**
+
+«¿En qué sección de la guía se encuentra esa recomendación?»
+
+**Resultado esperado:** Identificar la sección 5, *Prevención de desperdicios*, utilizando el contexto de la consulta anterior.
+
+**Resultado obtenido:** El asistente solicitó una aclaración sobre cuál recomendación se estaba mencionando, a pesar de que acababa de responder sobre la prevención de desperdicios.
+
+#### 3. Análisis de la causa
+
+La revisión del nodo `rag_node()` identificó una posible causa relacionada con la construcción del contexto enviado al modelo.
+
+Aunque el recuperador combinaba preguntas recientes, el mensaje enviado a Gemini incluía únicamente el último mensaje conversacional mediante:
+
+```python
+*state.get("messages", [])[-1:]
+```
+
+Esta configuración puede limitar la capacidad del modelo para interpretar referencias como «esa recomendación» o «lo anterior».
+
+El hallazgo indica que recuperar fragmentos documentales no siempre es suficiente para resolver referencias conversacionales si el modelo no recibe el historial pertinente.
+
+#### 4. Acción correctiva propuesta
+
+Se propone mejorar el nodo RAG mediante dos ajustes:
+
+1. Enviar los tres mensajes más recientes a Gemini, incluyendo la pregunta anterior, su respuesta y la nueva consulta.
+2. Detectar expresiones de referencia conversacional y priorizar la pregunta anterior para recuperar los documentos correspondientes.
+
+Las modificaciones buscan mejorar la continuidad contextual sin alterar las rutas Chain y Agent.
+
+#### 5. Plan de verificación
+
+Después de aplicar la corrección se deberán realizar las siguientes comprobaciones:
+
+- Validar la sintaxis de `graph/nodes.py`.
+- Repetir las dos preguntas en una conversación nueva de Streamlit.
+- Confirmar que la segunda respuesta identifique la sección 5.
+- Publicar la corrección en GitHub.
+- Comprobar el despliegue actualizado en Render.
+- Repetir las consultas en producción y registrar las métricas.
+
+#### 6. Resultado y estado
+
+**Estado:** Corregido y validado funcionalmente.
+
+**Problema identificado:** El asistente no conservaba adecuadamente el contexto de determinadas preguntas de seguimiento en la ruta RAG.
+
+**Acción correctiva:** Se ajustó el contexto conversacional enviado a Gemini y la recuperación documental para interpretar referencias a recomendaciones anteriores.
+
+**Prueba de validación:**
+
+- Pregunta inicial: «Según la guía operativa de Picanteo, ¿cómo podemos prevenir desperdicios?»
+- Pregunta de seguimiento: «¿En qué sección de la guía se encuentra esa recomendación?»
+
+**Resultado:** El asistente identificó correctamente la sección 5, *Prevención de desperdicios*, del documento `guia_operativa.md`.
+
+**Conclusión:** La corrección resolvió el escenario de continuidad conversacional evaluado, mejorando la integración entre la memoria de LangGraph y la recuperación documental.
+
 ## 12. Instalación y ejecución local
 
 ### Requisitos
