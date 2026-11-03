@@ -267,9 +267,31 @@ def rag_node(state: BusinessState) -> dict:
 
     # Combinar las últimas dos preguntas para resolver
     # referencias como "esa recomendación".
+    
     consulta_recuperacion = " ".join(
         preguntas_recientes[-2:]
     )
+
+    referencias_anteriores = (
+        "esa recomendación",
+        "esa recomendacion",
+        "lo anterior",
+        "esa información",
+        "esa informacion",
+        "lo que mencionaste",
+    )
+
+    pregunta_normalizada = pregunta.lower()
+
+    if (
+        len(preguntas_recientes) >= 2
+        and any(
+            referencia in pregunta_normalizada
+            for referencia in referencias_anteriores
+        )
+    ):
+        consulta_recuperacion = preguntas_recientes[-2]
+
 
     documentos = recuperar_documentos(
         consulta_recuperacion,
@@ -306,11 +328,18 @@ def rag_node(state: BusinessState) -> dict:
                     "No inventes procedimientos ni datos reales. "
                     "Si la información es insuficiente, indícalo. "
                     "Menciona el documento y la sección utilizada. "
+                    "Si el usuario hace referencia a una recomendación, "
+                    "respuesta o tema anterior mediante expresiones como "
+                    "'esa recomendación', 'eso' o 'lo anterior', utiliza "
+                    "el historial conversacional para identificar el referente. "
+                    "Si la fuente documental recuperada permite responder, "
+                    "menciona su sección exacta y no pidas aclaraciones "
+                    "innecesarias. No inventes fuentes ni secciones. "
                     "Responde en español.\n\n"
                     f"CONTEXTO DOCUMENTAL:\n{contexto}"
                 )
             ),
-            *state.get("messages", [])[-1:],
+            *state.get("messages", [])[-3:],
         ]
 
         respuesta_modelo = modelo.invoke(mensajes)
